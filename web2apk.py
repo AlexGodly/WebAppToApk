@@ -30,8 +30,13 @@ WORK_ROOT.mkdir(parents=True, exist_ok=True)
 
 def run_hidden(cmd, cwd=None, env=None, stdin_text=None):
     flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+    actual = [str(x) for x in cmd]
+    # On Windows, execute BAT/CMD files through cmd.exe. This avoids WinError 2
+    # when a batch file exists in cwd but is not on PATH.
+    if os.name == "nt" and actual and actual[0].lower().endswith((".bat", ".cmd")):
+        actual = ["cmd.exe", "/d", "/s", "/c", subprocess.list2cmdline(actual)]
     return subprocess.Popen(
-        cmd, cwd=cwd, env=env, stdin=subprocess.PIPE if stdin_text is not None else None,
+        actual, cwd=cwd, env=env, stdin=subprocess.PIPE if stdin_text is not None else None,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
         errors="replace", creationflags=flags
     )
@@ -397,7 +402,10 @@ class Web2APK(tk.Tk):
                     f.unlink(missing_ok=True)
 
             self.set_status("Building APK...")
-            self.execute(["gradlew.bat","assembleDebug"],workspace/"android",env)
+            gradlew = workspace/"android"/"gradlew.bat"
+            if not gradlew.exists():
+                raise RuntimeError(f"Gradle wrapper not found: {gradlew}")
+            self.execute([str(gradlew),"assembleDebug"],workspace/"android",env)
 
             built = workspace/"android"/"app"/"build"/"outputs"/"apk"/"debug"/"app-debug.apk"
             if not built.exists(): raise RuntimeError("Gradle completed but app-debug.apk was not found.")

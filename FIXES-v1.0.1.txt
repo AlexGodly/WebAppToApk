@@ -1,0 +1,8 @@
+Web2APK v1.0.1 fix
+
+Fixed:
+- [WinError 2] at the Gradle build step on Windows.
+- Web2APK now calls the absolute android\gradlew.bat path.
+- BAT/CMD subprocesses are executed through cmd.exe for reliable Windows behavior.
+
+Your Android SDK, Java, npm and Capacitor setup from the previous attempt can be reused.
